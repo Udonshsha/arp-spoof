@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
 	for (int i = 2; i < argc; i += 2){
 		pid_t pid = fork(); 
 		if (pid == 0){ 
-			process_ip_pair(iface, argv[i], argv[i + 1]);
+			process_flow(iface, argv[i], argv[i + 1]);
 			exit(1); 
 		}
 		else if(pid < 0){

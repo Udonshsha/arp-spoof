@@ -33,7 +33,7 @@ void get_net_info(char *iface, uint8_t *mac, unsigned int *ip){
         close(fd);
 }
 
-int process_ip_pair(char *inface, char *sender_ip, char *target_ip){
+int process_flow(char *inface, char *sender_ip, char *target_ip){
         char *iface = inface;
         struct net_info attacker;
         struct net_info sender;
